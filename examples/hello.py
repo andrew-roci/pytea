@@ -7,7 +7,7 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from pytea import (
+from snaptui import (
     Program, Model, Cmd, Msg, WindowSizeMsg, KeyMsg, quit_cmd,
     Style, ROUNDED_BORDER, join_vertical, place, CENTER,
 )
@@ -40,7 +40,7 @@ class HelloModel:
         border_style = Style().border(ROUNDED_BORDER).border_fg("#555555").padding(1, 2)
         help_style = Style().dim()
 
-        title = title_style.render("pytea")
+        title = title_style.render("snaptui")
         counter = f"Counter: {self.counter}"
         help_text = help_style.render("j/k: change counter  q: quit")
 

@@ -5,6 +5,7 @@ No curses. Direct termios/ioctl, matching Bubble Tea's approach.
 
 from __future__ import annotations
 
+import base64
 import fcntl
 import os
 import signal
@@ -91,6 +92,18 @@ DISABLE_MOUSE = '\x1b[?1000l\x1b[?1006l'
 
 ENABLE_BRACKETED_PASTE = '\x1b[?2004h'
 DISABLE_BRACKETED_PASTE = '\x1b[?2004l'
+
+# ── Clipboard (OSC 52) ──────────────────────────────────────────────────────
+
+def osc52_copy(text: str, selection: str = 'c') -> str:
+    """OSC 52 — write text to terminal clipboard."""
+    encoded = base64.b64encode(text.encode()).decode()
+    return f'\x1b]52;{selection};{encoded}\x07'
+
+
+def osc52_read(selection: str = 'c') -> str:
+    """OSC 52 — request clipboard contents from terminal."""
+    return f'\x1b]52;{selection};?\x07'
 
 
 # ── Raw mode ──────────────────────────────────────────────────────────────────

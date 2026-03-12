@@ -4,8 +4,8 @@ A zero-dependency TUI framework implementing the Elm Architecture
 with raw terminal I/O, matching Bubble Tea's approach.
 """
 
-from .model import Model, Msg, Cmd, View, WindowSizeMsg, QuitMsg, CursorBlinkMsg, Sub, quit_cmd, batch
-from .keys import KeyMsg, Mod, MouseMsg, MouseAction, MouseButton, PasteMsg, FocusMsg
+from .model import Model, Msg, Cmd, View, WindowSizeMsg, QuitMsg, CursorBlinkMsg, Sub, quit_cmd, batch, set_clipboard, set_primary_clipboard, read_clipboard, read_primary_clipboard
+from .keys import KeyMsg, Mod, MouseMsg, MouseAction, MouseButton, PasteMsg, FocusMsg, ClipboardMsg
 from .program import Program
 from .style import Style, ROUNDED_BORDER, NORMAL_BORDER, DOUBLE_BORDER, THICK_BORDER, HIDDEN_BORDER, NO_BORDER, Border
 from .theme import Theme, ThemeCharm, AppTheme, AppThemeCharm
@@ -16,7 +16,8 @@ from . import strutil
 __all__ = [
     # Core
     'Model', 'Msg', 'Cmd', 'View', 'WindowSizeMsg', 'QuitMsg', 'CursorBlinkMsg', 'Sub', 'quit_cmd', 'batch',
-    'KeyMsg', 'Mod', 'MouseMsg', 'MouseAction', 'MouseButton', 'PasteMsg', 'FocusMsg', 'Program',
+    'set_clipboard', 'set_primary_clipboard', 'read_clipboard', 'read_primary_clipboard',
+    'KeyMsg', 'Mod', 'MouseMsg', 'MouseAction', 'MouseButton', 'PasteMsg', 'FocusMsg', 'ClipboardMsg', 'Program',
     # Style + Theme
     'Style', 'Border',
     'ROUNDED_BORDER', 'NORMAL_BORDER', 'DOUBLE_BORDER', 'THICK_BORDER', 'HIDDEN_BORDER', 'NO_BORDER',

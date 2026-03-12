@@ -5,6 +5,7 @@ Direct stdin reads + escape sequence lookup table.
 
 from __future__ import annotations
 
+import base64
 import os
 import select
 from dataclasses import dataclass
@@ -49,6 +50,13 @@ class PasteMsg:
 class FocusMsg:
     """Terminal focus/blur event."""
     focused: bool
+
+
+@dataclass(frozen=True, slots=True)
+class ClipboardMsg:
+    """OSC 52 clipboard response from the terminal."""
+    content: str
+    selection: str  # 'c' or 'p'
 
 
 @dataclass(frozen=True, slots=True)
@@ -239,7 +247,7 @@ CTRL_MAP: dict[int, str] = {
 
 # ── Key reading ───────────────────────────────────────────────────────────────
 
-def read_key(fd: int, timeout: float = 0.05) -> KeyMsg | MouseMsg | None:
+def read_key(fd: int, timeout: float = 0.05) -> KeyMsg | MouseMsg | ClipboardMsg | None:
     """Read one key event from raw stdin.
 
     Args:
@@ -362,7 +370,52 @@ def _read_paste(fd: int) -> PasteMsg:
     return PasteMsg(text=buf.decode('utf-8', errors='replace'))
 
 
-def _read_escape_sequence(fd: int, initial: bytes) -> KeyMsg | MouseMsg | PasteMsg | FocusMsg:
+def _read_osc_response(fd: int) -> ClipboardMsg | KeyMsg:
+    """Read an OSC response after ESC ] has been received.
+
+    Reads bytes until BEL (\\x07) or ST (ESC \\\\), then parses
+    the OSC 52 payload: ``52;<sel>;<base64>``.
+    """
+    buf = bytearray()
+    prev = 0
+    for _ in range(8192):  # safety limit
+        ready, _, _ = select.select([fd], [], [], 1.0)
+        if not ready:
+            break
+        b = os.read(fd, 1)
+        if not b:
+            break
+        byte = b[0]
+        # BEL terminates
+        if byte == 0x07:
+            break
+        # ST (ESC \) terminates — previous byte was ESC
+        if byte == 0x5C and prev == 0x1B:
+            # Remove the trailing ESC we already appended
+            buf = buf[:-1]
+            break
+        buf.append(byte)
+        prev = byte
+
+    # Parse: expect "52;<sel>;<base64>"
+    try:
+        payload = buf.decode('ascii')
+    except (UnicodeDecodeError, ValueError):
+        return KeyMsg(f'unknown(osc:{buf!r})')
+
+    parts = payload.split(';', 2)
+    if len(parts) == 3 and parts[0] == '52':
+        selection = parts[1]
+        try:
+            content = base64.b64decode(parts[2]).decode('utf-8', errors='replace')
+        except Exception:
+            return KeyMsg(f'unknown(osc:{payload!r})')
+        return ClipboardMsg(content=content, selection=selection)
+
+    return KeyMsg(f'unknown(osc:{payload!r})')
+
+
+def _read_escape_sequence(fd: int, initial: bytes) -> KeyMsg | MouseMsg | PasteMsg | FocusMsg | ClipboardMsg:
     """Read an escape sequence after receiving ESC byte."""
     buf = initial  # b'\x1b'
 
@@ -375,6 +428,10 @@ def _read_escape_sequence(fd: int, initial: bytes) -> KeyMsg | MouseMsg | PasteM
         if not b:
             break
         buf += b
+
+        # Check for OSC start (ESC ])
+        if buf == b'\x1b]':
+            return _read_osc_response(fd)
 
         # Check for bracketed paste start
         if buf == PASTE_START:

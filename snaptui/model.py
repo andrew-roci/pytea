@@ -8,6 +8,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Callable, Protocol, runtime_checkable
 
+from . import terminal
+
 
 # ── Message types ─────────────────────────────────────────────────────────────
 
@@ -120,3 +122,37 @@ class Model(Protocol):
     def view(self) -> str | View:
         """Render the current state as a string or View for display."""
         ...
+
+
+# ── Clipboard commands (OSC 52) ─────────────────────────────────────────────
+
+def set_clipboard(text: str) -> Cmd:
+    """Command that writes text to the system clipboard via OSC 52."""
+    def cmd():
+        terminal.write(terminal.osc52_copy(text, 'c'))
+        return None
+    return cmd
+
+
+def set_primary_clipboard(text: str) -> Cmd:
+    """Command that writes text to the X11 primary selection via OSC 52."""
+    def cmd():
+        terminal.write(terminal.osc52_copy(text, 'p'))
+        return None
+    return cmd
+
+
+def read_clipboard() -> Cmd:
+    """Command that requests clipboard contents via OSC 52."""
+    def cmd():
+        terminal.write(terminal.osc52_read('c'))
+        return None
+    return cmd
+
+
+def read_primary_clipboard() -> Cmd:
+    """Command that requests X11 primary selection contents via OSC 52."""
+    def cmd():
+        terminal.write(terminal.osc52_read('p'))
+        return None
+    return cmd
